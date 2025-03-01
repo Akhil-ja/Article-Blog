@@ -6,6 +6,7 @@ import cors from "cors";
 import morgan from "morgan";
 import globalErrorHandler from "./middleware/errorMiddleware.js";
 import { userRouter } from "./routes/userRoutes.js";
+import imageRouter from "./routes/imageRoutes.js";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/user", userRouter);
+app.use("/api/images", imageRouter);
 
 app.use(globalErrorHandler);
 
