@@ -6,9 +6,11 @@ import AppError from "../utils/appError.js";
 
 export const registerUser = async (req, res, next) => {
   try {
-    const { email, phoneNumber, password, name } = req.body;
+    const { email, phoneNumber, password, fullName } = req.body;
 
-    if (!email || !phoneNumber || !password || !name) {
+    console.log(req.body);
+
+    if (!email || !phoneNumber || !password || !fullName) {
       return next(new AppError("Please provide all required fields", 400));
     }
 
@@ -18,7 +20,7 @@ export const registerUser = async (req, res, next) => {
 
     if (userExists) {
       if (!userExists.isVerified && userExists.otpExpiry < new Date()) {
-        userExists.name = name;
+        userExists.name = fullName;
 
         const passwordMatch = await bcrypt.compare(
           password,
@@ -45,12 +47,12 @@ export const registerUser = async (req, res, next) => {
           httpOnly: true,
           maxAge: 7 * 24 * 60 * 60 * 1000,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "none",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         });
 
         return res.status(200).json({
           _id: userExists._id,
-          name: userExists.name,
+          name: userExists.fullName,
           email: userExists.email,
           phoneNumber: userExists.phoneNumber,
           message:
@@ -82,7 +84,7 @@ export const registerUser = async (req, res, next) => {
     console.log(`the OTP is ${otp}`);
 
     const user = await User.create({
-      name,
+      name: fullName,
       email,
       phoneNumber,
       password: hashedPassword,
@@ -99,7 +101,7 @@ export const registerUser = async (req, res, next) => {
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       });
 
       return res.status(201).json({
@@ -148,6 +150,10 @@ export const verifyEmail = async (req, res, next) => {
     await user.save();
 
     return res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
       message: "Email verified successfully",
     });
   } catch (error) {
@@ -160,32 +166,37 @@ export const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return next(new AppError("Please provide email and password", 400));
+      return next(new AppError("Please provide both email and password", 400));
     }
 
     const user = await User.findOne({ email });
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const token = generateToken({ id: user._id });
-
-      res.cookie("userToken", token, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
-      });
-
-      return res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        isVerified: user.isVerified,
-        message: "Login successful",
-      });
-    } else {
-      return next(new AppError("Invalid email or password", 401));
+    if (!user) {
+      return next(new AppError("User  not registered. Please sign up.", 404));
     }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return next(new AppError("Incorrect password.", 401));
+    }
+
+    const token = generateToken({ id: user._id });
+
+    res.cookie("userToken", token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    return res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      isVerified: user.isVerified,
+      message: "Login successful",
+    });
   } catch (error) {
     next(error);
   }
@@ -250,10 +261,9 @@ export const resendVerificationOTP = async (req, res, next) => {
     }
 
     if (user.isVerified) {
-      return next(new AppError("User  is already verified", 400));
+      return next(new AppError("User  is already verified login", 400));
     }
 
-    // Generate new OTP
     const otp = generateOTP();
     const otpExpiry = new Date();
     otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
@@ -263,6 +273,8 @@ export const resendVerificationOTP = async (req, res, next) => {
     await user.save();
 
     await sendOTP(email, otp);
+
+    console.log("otp:", otp);
 
     return res.status(200).json({
       message: "Verification OTP resent to your email",
@@ -274,9 +286,9 @@ export const resendVerificationOTP = async (req, res, next) => {
 
 export const resetPassword = async (req, res, next) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, otp, password } = req.body;
 
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp || !password) {
       return next(new AppError("Please provide all required fields", 400));
     }
 
@@ -297,7 +309,7 @@ export const resetPassword = async (req, res, next) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     user.password = hashedPassword;
     user.resetPasswordOTP = undefined;
@@ -314,8 +326,6 @@ export const resetPassword = async (req, res, next) => {
 
 export const getUserProfile = async (req, res, next) => {
   try {
-    console.log(req.user);
-
     const user = await User.findById(req.user._id).select("-password");
 
     if (user) {
