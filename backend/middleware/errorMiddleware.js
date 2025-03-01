@@ -1,10 +1,13 @@
-/* eslint-disable no-unused-vars */
 const globalErrorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
+  const statusCode = err.isOperational ? err.statusCode : 500;
+  const message = err.isOperational ? err.message : "Something went wrong!";
 
-  res.status(err.statusCode).json({
-    status: err.statusCode >= 500 ? "error" : "fail",
-    message: err.message,
+  console.error(err);
+
+  res.status(statusCode).json({
+    status: "error",
+    statusCode,
+    message,
   });
 };
 
