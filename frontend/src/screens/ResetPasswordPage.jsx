@@ -13,7 +13,7 @@ const ResetPasswordPage = () => {
     password: "",
     confirmPassword: "",
   });
-  const [passwordError, setPasswordError] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
   const dispatch = useDispatch();
@@ -37,7 +37,6 @@ const ResetPasswordPage = () => {
     }
 
     if (error) {
-      console.error("Reset password error:", error);
       toast.error(
         typeof error === "object"
           ? error.message || JSON.stringify(error)
@@ -63,44 +62,60 @@ const ResetPasswordPage = () => {
       [name]: value,
     });
 
-    if (name === "password" || name === "confirmPassword") {
-      setPasswordError("");
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: null,
+      });
     }
   };
 
-  const validatePasswords = () => {
-    const { password, confirmPassword } = formData;
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
 
-    if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      return false;
+    if (!formData.otp.trim()) {
+      errors.otp = "OTP is required";
+      isValid = false;
     }
 
-    if (password !== confirmPassword) {
-      setPasswordError("Passwords do not match");
-      return false;
+    if (!formData.password.trim()) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.trim().length < 8) {
+      errors.password = "Password must be at least 8 characters long";
+      isValid = false;
     }
 
-    return true;
+    if (!formData.confirmPassword.trim()) {
+      errors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (formData.password.trim() !== formData.confirmPassword.trim()) {
+      errors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!formData.otp || formData.otp.trim() === "") {
-      toast.error("Please enter the verification code");
+    if (!validateForm()) {
       return;
     }
 
-    if (!validatePasswords()) {
-      return;
-    }
+    const trimmedFormData = {
+      otp: formData.otp.trim(),
+      password: formData.password.trim(),
+    };
 
     dispatch(
       resetPassword({
         email,
-        otp: formData.otp,
-        password: formData.password,
+        otp: trimmedFormData.otp,
+        password: trimmedFormData.password,
       })
     ).then((result) => {
       if (result.payload && !result.error) {
@@ -158,9 +173,14 @@ const ResetPasswordPage = () => {
               placeholder="Enter OTP"
               value={formData.otp}
               onChange={handleChange}
-              required
+              className={formErrors.otp ? "border-red-500" : ""}
               disabled={loading}
             />
+            {formErrors.otp && (
+              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
+                {formErrors.otp}
+              </p>
+            )}
           </div>
 
           <div className="input-group">
@@ -173,7 +193,7 @@ const ResetPasswordPage = () => {
                 placeholder="Enter new password"
                 value={formData.password}
                 onChange={handleChange}
-                required
+                className={formErrors.password ? "border-red-500" : ""}
                 disabled={loading}
               />
               <button
@@ -193,6 +213,11 @@ const ResetPasswordPage = () => {
                 )}
               </button>
             </div>
+            {formErrors.password && (
+              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
+                {formErrors.password}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Password must be at least 8 characters long
             </p>
@@ -207,26 +232,17 @@ const ResetPasswordPage = () => {
               placeholder="Confirm new password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              required
+              className={formErrors.confirmPassword ? "border-red-500" : ""}
               disabled={loading}
             />
-            {passwordError && (
-              <p className="text-sm font-medium text-destructive">
-                {passwordError}
+            {formErrors.confirmPassword && (
+              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
+                {formErrors.confirmPassword}
               </p>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={
-              loading ||
-              !formData.otp ||
-              !formData.password ||
-              !formData.confirmPassword
-            }
-          >
+          <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="loader-icon" />
