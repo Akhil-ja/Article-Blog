@@ -10,21 +10,58 @@ import { Input } from "@/components/ui/input";
 
 export const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [formErrors, setFormErrors] = useState({});
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, user } = useSelector((state) => state.auth);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: null });
+    }
 
     if (error) {
       dispatch(clearAuthState());
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    if (!form.email.trim()) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    if (!form.password.trim()) {
+      errors.password = "Password is required";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(loginUser(form));
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const trimmedForm = {
+      email: form.email.trim(),
+      password: form.password.trim(),
+    };
+
+    dispatch(loginUser(trimmedForm));
   };
 
   useEffect(() => {
@@ -52,8 +89,14 @@ export const LoginPage = () => {
               name="email"
               placeholder="Enter Email"
               onChange={handleChange}
-              required
+              value={form.email}
+              className={formErrors.email ? "border-red-500" : ""}
             />
+            {formErrors.email && (
+              <p className="text-sm mt-1" style={{ color: "red" }}>
+                {formErrors.email}
+              </p>
+            )}
           </div>
           <div className="input-group">
             <div className="flex justify-between items-center">
@@ -61,7 +104,7 @@ export const LoginPage = () => {
                 Password
               </Label>
               <Link to="/forgot-password">
-                <Button variant="link" className=" p-0">
+                <Button variant="link" className="p-0">
                   Forgot Password?
                 </Button>
               </Link>
@@ -72,8 +115,14 @@ export const LoginPage = () => {
               name="password"
               placeholder="Password"
               onChange={handleChange}
-              required
+              value={form.password}
+              className={formErrors.password ? "border-red-500" : ""}
             />
+            {formErrors.password && (
+              <p className="text-sm mt-1" style={{ color: "red" }}>
+                {formErrors.password}
+              </p>
+            )}
           </div>
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? (
