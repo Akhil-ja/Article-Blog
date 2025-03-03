@@ -8,8 +8,6 @@ export const registerUser = async (req, res, next) => {
   try {
     const { email, phoneNumber, password, fullName } = req.body;
 
-    console.log(req.body);
-
     if (!email || !phoneNumber || !password || !fullName) {
       return next(new AppError("Please provide all required fields", 400));
     }
@@ -40,6 +38,8 @@ export const registerUser = async (req, res, next) => {
 
         await userExists.save();
         await sendOTP(email, newOtp);
+
+        console.log("The OTP is: ", newOtp);
 
         const token = generateToken({ id: userExists._id });
 
@@ -237,6 +237,8 @@ export const forgotPassword = async (req, res, next) => {
     await user.save();
 
     await sendOTP(email, otp);
+
+    console.log("The OTP is: ", otp);
 
     return res.status(200).json({
       message: "Password reset OTP sent to your email",
