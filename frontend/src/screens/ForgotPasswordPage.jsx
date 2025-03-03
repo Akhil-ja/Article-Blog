@@ -10,6 +10,7 @@ const ForgotPasswordPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const { loading, error } = useSelector((state) => state.auth);
 
   useEffect(() => {
@@ -19,11 +20,28 @@ const ForgotPasswordPage = () => {
     }
   }, [error, dispatch]);
 
+  const validateEmail = () => {
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      return false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(forgotPassword(email)).then((result) => {
+
+    if (!validateEmail()) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    dispatch(forgotPassword(trimmedEmail)).then((result) => {
       if (result.payload && !result.error) {
-        navigate("/reset-password", { state: { email } });
+        navigate("/reset-password", { state: { email: trimmedEmail } });
         dispatch(clearAuthState());
       }
     });
@@ -48,10 +66,25 @@ const ForgotPasswordPage = () => {
                 id="email"
                 type="email"
                 placeholder="Enter Email"
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-4/5 p-3 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError("");
+                }}
+                className={
+                  emailError
+                    ? "border-red-500 w-4/5 p-3 rounded-md"
+                    : "w-4/5 p-3 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                }
               />
+              {emailError && (
+                <p
+                  className="text-sm text-red-500 mt-1"
+                  style={{ color: "red" }}
+                >
+                  {emailError}
+                </p>
+              )}
             </div>
             <button
               type="submit"
