@@ -14,7 +14,7 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import { LoginPage } from "./screens/LoginPage";
 import { RegisterPage } from "./screens/RegisterPage";
-import HomePage from "./screens/homePage";
+import HomePage from "./screens/HomePage";
 import { OTPVerificationPage } from "./screens/OTPVerificationPage";
 import ForgotPasswordPage from "./screens/ForgotPasswordPage";
 import ResetPasswordPage from "./screens/ResetPasswordPage";
