@@ -19,18 +19,68 @@ export const RegisterPage = () => {
   const { loading, error, user } = useSelector((state) => state.auth);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
 
     if (error) {
       dispatch(clearAuthState());
     }
   };
 
+  const validateForm = () => {
+    let isValid = true;
+
+    if (!form.fullName.trim()) {
+      toast.error("Full Name is required");
+      isValid = false;
+    }
+
+    if (!form.email.trim()) {
+      toast.error("Email is required");
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      toast.error("Please enter a valid email address");
+      isValid = false;
+    }
+
+    if (!form.phoneNumber.trim()) {
+      toast.error("Phone Number is required");
+      isValid = false;
+    } else if (
+      !/^\d{10,15}$/.test(form.phoneNumber.trim().replace(/[-()\s]/g, ""))
+    ) {
+      toast.error("Please enter a valid phone number");
+      isValid = false;
+    }
+
+    if (!form.password.trim()) {
+      toast.error("Password is required");
+      isValid = false;
+    } else if (form.password.trim().length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(registerUser(form)).then((result) => {
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const trimmedForm = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phoneNumber: form.phoneNumber.trim(),
+      password: form.password.trim(),
+    };
+
+    dispatch(registerUser(trimmedForm)).then((result) => {
       if (result.payload && !result.error) {
-        navigate("/verify-otp", { state: { email: form.email } });
+        navigate("/verify-otp", { state: { email: trimmedForm.email } });
         dispatch(clearAuthState());
       }
     });
@@ -59,7 +109,6 @@ export const RegisterPage = () => {
               placeholder="Enter Full Name"
               value={form.fullName}
               onChange={handleChange}
-              required
             />
           </div>
           <div className="input-group">
@@ -71,7 +120,6 @@ export const RegisterPage = () => {
               placeholder="Enter Email"
               value={form.email}
               onChange={handleChange}
-              required
             />
           </div>
           <div className="input-group">
@@ -83,7 +131,6 @@ export const RegisterPage = () => {
               placeholder="Phone Number"
               value={form.phoneNumber}
               onChange={handleChange}
-              required
             />
           </div>
           <div className="input-group">
@@ -95,7 +142,6 @@ export const RegisterPage = () => {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              required
             />
             <p className="text-xs text-muted-foreground">
               Password must be at least 8 characters long
