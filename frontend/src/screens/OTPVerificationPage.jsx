@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 
 export const OTPVerificationPage = () => {
   const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
   const [timer, setTimer] = useState(10);
   const [canResend, setCanResend] = useState(false);
 
@@ -29,7 +30,6 @@ export const OTPVerificationPage = () => {
     }
 
     if (error) {
-      console.log("Error detected:", error);
       toast.error(
         typeof error === "object"
           ? error.message || JSON.stringify(error)
@@ -50,20 +50,28 @@ export const OTPVerificationPage = () => {
 
   useEffect(() => {
     if (!email) {
-      console.warn("Email is missing in location state");
       navigate("/login", { replace: true });
       dispatch(clearAuthState());
     }
   }, [email, dispatch, navigate]);
 
+  const validateOtp = () => {
+    if (!otp.trim()) {
+      setOtpError("Please enter the OTP");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!otp) {
-      toast.error("Please enter the OTP");
+
+    if (!validateOtp()) {
       return;
     }
 
-    dispatch(verifyEmail({ email, otp })).then((result) => {
+    const trimmedOtp = otp.trim();
+    dispatch(verifyEmail({ email, otp: trimmedOtp })).then((result) => {
       if (result.payload && !result.error) {
         navigate("/user/home");
         dispatch(clearAuthState());
@@ -73,7 +81,6 @@ export const OTPVerificationPage = () => {
 
   const handleResendOTP = () => {
     dispatch(clearAuthState());
-    console.log("Resending OTP to:", email);
     dispatch(resendVerificationOTP({ email }));
     setTimer(10);
     setCanResend(false);
@@ -113,7 +120,7 @@ export const OTPVerificationPage = () => {
         )}
         <form
           onSubmit={handleSubmit}
-          className="form "
+          className="form"
           style={{ marginTop: "20px" }}
         >
           <div className="input-group">
@@ -122,9 +129,17 @@ export const OTPVerificationPage = () => {
               type="text"
               placeholder="Enter OTP"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
+              onChange={(e) => {
+                setOtp(e.target.value);
+                setOtpError("");
+              }}
+              className={otpError ? "border-red-500" : ""}
             />
+            {otpError && (
+              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
+                {otpError}
+              </p>
+            )}
           </div>
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? (
