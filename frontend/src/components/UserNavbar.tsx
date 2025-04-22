@@ -12,6 +12,7 @@ const UserNavbar = () => {
   const handleLogout = () => {
     dispatch(logoutUser() as any).then(() => {
       navigate("/login");
+      window.location.reload();
     });
     sessionStorage.removeItem("authInfo");
   };
