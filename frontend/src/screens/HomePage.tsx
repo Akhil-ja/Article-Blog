@@ -2,6 +2,7 @@
 /* eslint-disable react/display-name */
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import React from "react";
+import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchUserImages,
@@ -50,7 +51,6 @@ const EditImageDialog = React.memo(
         setPreviewUrl(image.imageUrl || "");
       }
     }, [image]);
-
     const handleFileChange = (event) => {
       const selectedFile = event.target.files[0];
       if (selectedFile) {
@@ -60,8 +60,14 @@ const EditImageDialog = React.memo(
     };
 
     const handleSubmit = () => {
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) {
+        toast.error("Title cannot be empty");
+        return;
+      }
+
       const imageData = new FormData();
-      imageData.append("title", title);
+      imageData.append("title", trimmedTitle);
       if (file) {
         imageData.append("image", file);
       }
@@ -354,7 +360,7 @@ function HomePage() {
     setCurrentEditImage(null);
   }, []);
 
-  const handleRemoveFromQueue = useCallback((index) => {
+  const handleRemoveFromQueue = useCallback((index: number) => {
     setUploadQueue((prevQueue) => {
       const newQueue = [...prevQueue];
       newQueue.splice(index, 1);
