@@ -1,106 +1,107 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "@/api/apiConfig";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { UserData, AuthState } from "../Types/userType";
+import api from "../api/apiConfig";
 
-export const registerUser = createAsyncThunk(
-  "auth/register",
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await api.post("api/user/register", userData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
+export const registerUser = createAsyncThunk<
+  any,
+  UserData,
+  { rejectValue: any }
+>("auth/register", async (userData, { rejectWithValue }) => {
+  try {
+    const response = await api.post("api/user/register", userData);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response.data);
   }
-);
+});
 
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<any, UserData, { rejectValue: any }>(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await api.post("api/user/login", credentials);
       sessionStorage.setItem("authInfo", JSON.stringify(response.data));
-
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
 );
 
-export const logoutUser = createAsyncThunk(
+export const logoutUser = createAsyncThunk<null, void, { rejectValue: any }>(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
       await api.post("api/user/logout");
       sessionStorage.removeItem("authInfo");
-
       return null;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
 );
 
-export const forgotPassword = createAsyncThunk(
-  "auth/forgotPassword",
-  async (email, { rejectWithValue }) => {
-    try {
-      const response = await api.post("api/user/forgot-password", { email });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
+export const forgotPassword = createAsyncThunk<
+  any,
+  string,
+  { rejectValue: any }
+>("auth/forgotPassword", async (email, { rejectWithValue }) => {
+  try {
+    const response = await api.post("api/user/forgot-password", { email });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response.data);
   }
-);
+});
 
-export const resetPassword = createAsyncThunk(
+export const resetPassword = createAsyncThunk<any, any, { rejectValue: any }>(
   "auth/resetPassword",
   async (data, { rejectWithValue }) => {
     try {
       const response = await api.post("api/user/reset-password", data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
 );
 
-export const resendVerificationOTP = createAsyncThunk(
-  "auth/resendOTP",
-  async (data, { rejectWithValue }) => {
-    try {
-      const email = data.email;
-      const response = await api.post("api/user/resend-verification", {
-        email,
-      });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
+export const resendVerificationOTP = createAsyncThunk<
+  any,
+  { email: string },
+  { rejectValue: any }
+>("auth/resendOTP", async ({ email }, { rejectWithValue }) => {
+  try {
+    const response = await api.post("api/user/resend-verification", { email });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response.data);
   }
-);
+});
 
-export const verifyEmail = createAsyncThunk(
+export const verifyEmail = createAsyncThunk<any, any, { rejectValue: any }>(
   "auth/verifyEmail",
   async (data, { rejectWithValue }) => {
     try {
       const response = await api.post("api/user/verify-email", data);
       sessionStorage.setItem("authInfo", JSON.stringify(response.data));
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
 );
 
+const initialState: AuthState = {
+  user: null,
+  loading: false,
+  error: null,
+  success: null,
+};
+
 const authSlice = createSlice({
   name: "auth",
-  initialState: {
-    user: null,
-    loading: false,
-    error: null,
-    success: null,
-  },
+  initialState,
   reducers: {
     clearAuthState: (state) => {
       state.error = null;
@@ -121,7 +122,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -134,11 +134,9 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
       })
-
       .addCase(forgotPassword.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -151,7 +149,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
       .addCase(resetPassword.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -164,7 +161,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
       .addCase(resendVerificationOTP.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -177,7 +173,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
       .addCase(verifyEmail.pending, (state) => {
         state.loading = true;
         state.error = null;

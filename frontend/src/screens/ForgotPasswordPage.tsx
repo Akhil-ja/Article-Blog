@@ -4,14 +4,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { forgotPassword, clearAuthState } from "../slices/authSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "../components/ui/input";
+import { RootState } from "../store";
+import { ChangeEventHandler, SubmitEventHandler } from "../Types/eventTypes";
 
 const ForgotPasswordPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
-  const { loading, error } = useSelector((state) => state.auth);
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     if (error) {
@@ -31,7 +33,7 @@ const ForgotPasswordPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
     if (!validateEmail()) {
@@ -39,12 +41,17 @@ const ForgotPasswordPage = () => {
     }
 
     const trimmedEmail = email.trim();
-    dispatch(forgotPassword(trimmedEmail)).then((result) => {
+    dispatch(forgotPassword(trimmedEmail) as any).then((result: any) => {
       if (result.payload && !result.error) {
         navigate("/reset-password", { state: { email: trimmedEmail } });
         dispatch(clearAuthState());
       }
     });
+  };
+
+  const handleEmailChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    setEmail(e.target.value);
+    setEmailError("");
   };
 
   return (
@@ -67,10 +74,7 @@ const ForgotPasswordPage = () => {
                 type="email"
                 placeholder="Enter Email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setEmailError("");
-                }}
+                onChange={handleEmailChange} // Using typed event handler
                 className={
                   emailError
                     ? "border-red-500 w-4/5 p-3 rounded-md"

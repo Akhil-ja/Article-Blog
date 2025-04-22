@@ -1,7 +1,7 @@
 import { useDispatch } from "react-redux";
-import { logoutUser } from "@/slices/authSlice";
+import { logoutUser } from "../slices/authSlice";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { AppBar, Toolbar, Typography, Box } from "@mui/material";
 
 const UserNavbar = () => {
@@ -10,7 +10,7 @@ const UserNavbar = () => {
   const authInfo = sessionStorage.getItem("authInfo");
 
   const handleLogout = () => {
-    dispatch(logoutUser()).then(() => {
+    dispatch(logoutUser() as any).then(() => {
       navigate("/login");
     });
     sessionStorage.removeItem("authInfo");
@@ -34,7 +34,13 @@ const UserNavbar = () => {
         </Typography>
         <Box sx={{ display: "flex", gap: 2 }}>
           {authInfo && (
-            <Button onClick={handleLogout} color="inherit" variant="outlined">
+            <Button
+              onClick={handleLogout}
+              color="inherit"
+              variant="outlined"
+              className={undefined}
+              size={undefined}
+            >
               Logout
             </Button>
           )}

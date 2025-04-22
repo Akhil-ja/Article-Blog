@@ -1,39 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { resetPassword, clearAuthState } from "../slices/authSlice";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "../components/ui/label";
+import { Input } from "../components/ui/input";
+import { RootState } from "../store";
+
+type ResetFormData = {
+  otp: string;
+  password: string;
+  confirmPassword: string;
+};
+
+type ResetFormErrors = Partial<Record<keyof ResetFormData, string>>;
 
 const ResetPasswordPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ResetFormData>({
     otp: "",
     password: "",
     confirmPassword: "",
   });
-  const [formErrors, setFormErrors] = useState({});
+
+  const [formErrors, setFormErrors] = useState<ResetFormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error, success } = useSelector((state) => state.auth);
+  const { loading, error, success } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   const { email } = location.state || {};
 
   useEffect(() => {
-    if (success) {
-      if (success.includes("password") && success.includes("reset")) {
-        toast.success(
-          "Password reset successful! Please login with your new password."
-        );
-        setTimeout(() => {
-          navigate("/login", { replace: true });
-          dispatch(clearAuthState());
-        }, 1000);
-      }
+    if (success && success.includes("password") && success.includes("reset")) {
+      toast.success(
+        "Password reset successful! Please login with your new password."
+      );
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+        dispatch(clearAuthState());
+      }, 1000);
     }
 
     if (error) {
@@ -55,23 +65,24 @@ const ResetPasswordPage = () => {
     }
   }, [email, navigate]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
 
-    if (formErrors[name]) {
-      setFormErrors({
-        ...formErrors,
-        [name]: null,
-      });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (formErrors[name as keyof ResetFormData]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
     }
   };
 
   const validateForm = () => {
-    const errors = {};
+    const errors: ResetFormErrors = {};
     let isValid = true;
 
     if (!formData.otp.trim()) {
@@ -99,12 +110,10 @@ const ResetPasswordPage = () => {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const trimmedFormData = {
       otp: formData.otp.trim(),
@@ -116,8 +125,8 @@ const ResetPasswordPage = () => {
         email,
         otp: trimmedFormData.otp,
         password: trimmedFormData.password,
-      })
-    ).then((result) => {
+      }) as any
+    ).then((result: any) => {
       if (result.payload && !result.error) {
         navigate("/user/home");
         dispatch(clearAuthState());
@@ -148,7 +157,7 @@ const ResetPasswordPage = () => {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h2 className="title w-full">Reset Password</h2>
+          <h2 className="title w-full text-center">Reset Password</h2>
         </div>
 
         <div className="alert-box" style={{ marginBlock: "8px" }}>
@@ -165,7 +174,9 @@ const ResetPasswordPage = () => {
 
         <form onSubmit={handleSubmit} className="form">
           <div className="input-group">
-            <Label htmlFor="otp">OTP</Label>
+            <Label htmlFor="otp" className={undefined}>
+              OTP
+            </Label>
             <Input
               id="otp"
               name="otp"
@@ -177,14 +188,14 @@ const ResetPasswordPage = () => {
               disabled={loading}
             />
             {formErrors.otp && (
-              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
-                {formErrors.otp}
-              </p>
+              <p className="text-sm text-red-500 mt-1">{formErrors.otp}</p>
             )}
           </div>
 
           <div className="input-group">
-            <Label htmlFor="password">New Password</Label>
+            <Label htmlFor="password" className={undefined}>
+              New Password
+            </Label>
             <div className="relative">
               <Input
                 id="password"
@@ -214,9 +225,7 @@ const ResetPasswordPage = () => {
               </button>
             </div>
             {formErrors.password && (
-              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
-                {formErrors.password}
-              </p>
+              <p className="text-sm text-red-500 mt-1">{formErrors.password}</p>
             )}
             <p className="text-xs text-muted-foreground">
               Password must be at least 8 characters long
@@ -224,7 +233,9 @@ const ResetPasswordPage = () => {
           </div>
 
           <div className="input-group">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className={undefined}>
+              Confirm Password
+            </Label>
             <Input
               id="confirmPassword"
               name="confirmPassword"
@@ -236,7 +247,7 @@ const ResetPasswordPage = () => {
               disabled={loading}
             />
             {formErrors.confirmPassword && (
-              <p className="text-sm text-red-500 mt-1" style={{ color: "red" }}>
+              <p className="text-sm text-red-500 mt-1">
                 {formErrors.confirmPassword}
               </p>
             )}
@@ -253,6 +264,7 @@ const ResetPasswordPage = () => {
             )}
           </button>
         </form>
+
         <p className="signup-text">
           Remember your password?{" "}
           <Link to="/login" className="signup-link">

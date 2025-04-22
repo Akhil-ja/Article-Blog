@@ -9,7 +9,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2, Mail } from "lucide-react";
 import { Button } from "@mui/material";
-import { Input } from "@/components/ui/input";
+import { Input } from "../components/ui/input";
+import { RootState } from "../store";
+import { SubmitEventHandler } from "../Types/eventTypes";
 
 export const OTPVerificationPage = () => {
   const [otp, setOtp] = useState("");
@@ -20,7 +22,9 @@ export const OTPVerificationPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error, success } = useSelector((state) => state.auth);
+  const { loading, error, success } = useSelector(
+    (state: RootState) => state.auth
+  );
   const { email } = location.state || {};
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export const OTPVerificationPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
     if (!validateOtp()) {
@@ -71,17 +75,19 @@ export const OTPVerificationPage = () => {
     }
 
     const trimmedOtp = otp.trim();
-    dispatch(verifyEmail({ email, otp: trimmedOtp })).then((result) => {
-      if (result.payload && !result.error) {
-        navigate("/user/home");
-        dispatch(clearAuthState());
+    dispatch(verifyEmail({ email, otp: trimmedOtp }) as any).then(
+      (result: any) => {
+        if (result.payload && !result.error) {
+          navigate("/user/home");
+          dispatch(clearAuthState());
+        }
       }
-    });
+    );
   };
 
   const handleResendOTP = () => {
     dispatch(clearAuthState());
-    dispatch(resendVerificationOTP({ email }));
+    dispatch(resendVerificationOTP({ email }) as any);
     setTimer(10);
     setCanResend(false);
   };
@@ -129,7 +135,7 @@ export const OTPVerificationPage = () => {
               type="text"
               placeholder="Enter OTP"
               value={otp}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setOtp(e.target.value);
                 setOtpError("");
               }}
@@ -153,11 +159,7 @@ export const OTPVerificationPage = () => {
           </button>
         </form>
         <div className="signup-text">
-          <Button
-            variant="secondary"
-            onClick={handleResendOTP}
-            disabled={!canResend || loading}
-          >
+          <Button onClick={handleResendOTP} disabled={!canResend || loading}>
             {!canResend ? `Resend code in ${timer}s` : "Resend OTP"}
           </Button>
         </div>

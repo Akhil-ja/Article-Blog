@@ -4,8 +4,10 @@ import { registerUser, clearAuthState } from "../slices/authSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "../components/ui/label";
+import { Input } from "../components/ui/input";
+import { RootState } from "../store";
+import { ChangeEventHandler, SubmitEventHandler } from "../Types/eventTypes";
 
 export const RegisterPage = () => {
   const [form, setForm] = useState({
@@ -16,9 +18,11 @@ export const RegisterPage = () => {
   });
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, user } = useSelector((state) => state.auth);
+  const { loading, error, user } = useSelector(
+    (state: RootState) => state.auth
+  );
 
-  const handleChange = (e) => {
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
 
@@ -64,7 +68,7 @@ export const RegisterPage = () => {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -78,7 +82,7 @@ export const RegisterPage = () => {
       password: form.password.trim(),
     };
 
-    dispatch(registerUser(trimmedForm)).then((result) => {
+    dispatch(registerUser(trimmedForm) as any).then((result: any) => {
       if (result.payload && !result.error) {
         navigate("/verify-otp", { state: { email: trimmedForm.email } });
         dispatch(clearAuthState());
@@ -101,7 +105,9 @@ export const RegisterPage = () => {
         <h2 className="title">Create Account</h2>
         <form onSubmit={handleSubmit} className="form">
           <div className="input-group">
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="fullName" className={undefined}>
+              Full Name
+            </Label>
             <Input
               id="fullName"
               type="text"
@@ -109,10 +115,13 @@ export const RegisterPage = () => {
               placeholder="Enter Full Name"
               value={form.fullName}
               onChange={handleChange}
+              className={undefined}
             />
           </div>
           <div className="input-group">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className={undefined}>
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -120,10 +129,13 @@ export const RegisterPage = () => {
               placeholder="Enter Email"
               value={form.email}
               onChange={handleChange}
+              className={undefined}
             />
           </div>
           <div className="input-group">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Label htmlFor="phoneNumber" className={undefined}>
+              Phone Number
+            </Label>
             <Input
               id="phoneNumber"
               type="tel"
@@ -131,10 +143,13 @@ export const RegisterPage = () => {
               placeholder="Phone Number"
               value={form.phoneNumber}
               onChange={handleChange}
+              className={undefined}
             />
           </div>
           <div className="input-group">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className={undefined}>
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -142,6 +157,7 @@ export const RegisterPage = () => {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
+              className={undefined}
             />
             <p className="text-xs text-muted-foreground">
               Password must be at least 8 characters long

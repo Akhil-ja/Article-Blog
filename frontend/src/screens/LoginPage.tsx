@@ -5,22 +5,31 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { Button } from "@mui/material";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "../components/ui/label";
+import { Input } from "../components/ui/input";
+import { RootState } from "../store";
+import { ChangeEventHandler, SubmitEventHandler } from "../Types/eventTypes";
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 export const LoginPage = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [formErrors, setFormErrors] = useState({});
+  const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, user } = useSelector((state) => state.auth);
+  const { loading, error, user } = useSelector(
+    (state: RootState) => state.auth
+  );
 
-  const handleChange = (e) => {
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
 
     if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: null });
+      setFormErrors({ ...formErrors, [name]: "" });
     }
 
     if (error) {
@@ -29,7 +38,7 @@ export const LoginPage = () => {
   };
 
   const validateForm = () => {
-    const errors = {};
+    const errors: { [key: string]: string } = {};
     let isValid = true;
 
     if (!form.email.trim()) {
@@ -49,7 +58,7 @@ export const LoginPage = () => {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -61,7 +70,7 @@ export const LoginPage = () => {
       password: form.password.trim(),
     };
 
-    dispatch(loginUser(trimmedForm));
+    dispatch(loginUser(trimmedForm) as any);
   };
 
   useEffect(() => {
@@ -104,9 +113,7 @@ export const LoginPage = () => {
                 Password
               </Label>
               <Link to="/forgot-password">
-                <Button variant="link" className="p-0">
-                  Forgot Password?
-                </Button>
+                <Button className="p-0">Forgot Password?</Button>
               </Link>
             </div>
             <Input

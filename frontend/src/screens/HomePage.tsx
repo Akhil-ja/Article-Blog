@@ -35,6 +35,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragHandleIcon from "@mui/icons-material/DragHandle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { RootState } from "../store";
 
 const EditImageDialog = React.memo(
   ({ open, handleClose, image, handleSaveEdit }) => {
@@ -235,7 +236,9 @@ const DraggableImageItem = React.memo(
 
 function HomePage() {
   const dispatch = useDispatch();
-  const { images, loading, error } = useSelector((state) => state.image);
+  const { images, loading, error } = useSelector(
+    (state: RootState) => state.image
+  );
   const [uploadQueue, setUploadQueue] = useState([]);
   const [imageTitles, setImageTitles] = useState([]);
   const [hasOrderChanged, setHasOrderChanged] = useState(false);
@@ -246,7 +249,7 @@ function HomePage() {
   const [currentEditImage, setCurrentEditImage] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchUserImages());
+    dispatch(fetchUserImages() as any);
   }, [dispatch]);
 
   useEffect(() => {
@@ -257,8 +260,8 @@ function HomePage() {
 
   const handleDelete = useCallback(
     (id) => {
-      dispatch(deleteImage(id)).then(() => {
-        dispatch(fetchUserImages());
+      dispatch(deleteImage(id) as any).then(() => {
+        dispatch(fetchUserImages() as any);
       });
     },
     [dispatch]
@@ -271,8 +274,8 @@ function HomePage() {
 
   const handleSaveEdit = useCallback(
     (id, imageData) => {
-      dispatch(updateImage({ id, imageData })).then(() => {
-        dispatch(fetchUserImages());
+      dispatch(updateImage({ id, imageData }) as any).then(() => {
+        dispatch(fetchUserImages() as any);
         setEditDialogOpen(false);
         setCurrentEditImage(null);
       });
@@ -304,7 +307,7 @@ function HomePage() {
       titles: imageTitles,
     };
 
-    dispatch(uploadImages(imageData)).then(() => {
+    dispatch(uploadImages(imageData) as any).then(() => {
       setUploadQueue([]);
       setImageTitles([]);
 
@@ -341,7 +344,7 @@ function HomePage() {
       order: index,
     }));
 
-    dispatch(rearrangeImages(imageOrders)).then(() => {
+    dispatch(rearrangeImages(imageOrders) as any).then(() => {
       setHasOrderChanged(false);
     });
   }, [dispatch, localImages]);
