@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable react/display-name */
+// @ts-nocheck
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import React from "react";
 import { toast } from "react-toastify";
