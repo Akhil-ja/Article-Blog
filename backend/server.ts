@@ -4,9 +4,9 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
-import globalErrorHandler from "./middleware/errorMiddleware.js";
 import { userRouter } from "./routes/userRoutes.js";
 import imageRouter from "./routes/imageRoutes.js";
+import globalErrorHandler from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 

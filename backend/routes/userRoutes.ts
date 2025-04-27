@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  registerUser,
   loginUser,
   logoutUser,
   resetPassword,
@@ -8,7 +7,9 @@ import {
   getUserProfile,
   forgotPassword,
   resendVerificationOTP,
+  registerUser,
 } from "../controller/userController.js";
+
 import protect from "../middleware/authMiddleware.js";
 
 const userRouter = Router();

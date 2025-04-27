@@ -1,16 +1,28 @@
-import Image from "../models/imageModel.js";
-import User from "../models/userModel.js";
+import { Request, Response, NextFunction } from "express";
+import { Readable } from "stream";
+import mongoose, { Types } from "mongoose";
+import Image, { IImage } from "../models/imageModel.js";
+import User, { IUser } from "../models/userModel.js";
 import AppError from "../utils/appError.js";
 import cloudinary from "../config/cloudinary.js";
-import { Readable } from "stream";
 
-const uploadToCloudinary = (buffer, folder) => {
+interface CloudinaryResult {
+  secure_url: string;
+  public_id: string;
+}
+
+const uploadToCloudinary = (
+  buffer: Buffer,
+  folder: string
+): Promise<CloudinaryResult> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       { folder },
       (error, result) => {
         if (error) return reject(error);
-        resolve(result);
+        if (!result)
+          return reject(new Error("Failed to get result from Cloudinary"));
+        resolve(result as CloudinaryResult);
       }
     );
 
@@ -25,12 +37,15 @@ const uploadToCloudinary = (buffer, folder) => {
   });
 };
 
-export const uploadImages = async (req, res, next) => {
+export const uploadImages = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const titles = req.body.titles;
+    const titles = req.body.titles as string[];
 
     console.log(titles);
-
     console.log(typeof titles);
 
     if (!req.files || req.files.length === 0) {
@@ -47,22 +62,25 @@ export const uploadImages = async (req, res, next) => {
       );
     }
 
-    const uploadedImages = [];
-    const user = await User.findById(req.user._id);
+    const uploadedImages: IImage[] = [];
+    const user = (await User.findById(req.user._id)) as IUser | null;
 
     if (!user) {
       return next(new AppError("User not found", 404));
     }
 
-    const maxOrderImage = await Image.findOne({ userId: req.user._id })
+    const maxOrderImage = (await Image.findOne({ userId: req.user._id })
       .sort({ order: -1 })
-      .limit(1);
+      .limit(1)) as (IImage & { order: number }) | null;
 
-    let startOrder = maxOrderImage ? maxOrderImage.order + 1 : 0;
+    let startOrder =
+      maxOrderImage && typeof maxOrderImage.order === "number"
+        ? maxOrderImage.order + 1
+        : 0;
 
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
-      const title = req.body.titles[i];
+      const title = titles[i];
 
       const result = await uploadToCloudinary(
         file.buffer,
@@ -78,12 +96,16 @@ export const uploadImages = async (req, res, next) => {
       });
 
       uploadedImages.push(newImage);
-      user.images.push(newImage._id);
+      user.images.push(
+        new mongoose.Types.ObjectId(
+          (newImage._id as mongoose.Types.ObjectId).toString()
+        )
+      );
     }
 
     await user.save();
 
-    return res.status(201).json({
+    res.status(201).json({
       message: "Images uploaded successfully",
       images: uploadedImages,
     });
@@ -92,13 +114,17 @@ export const uploadImages = async (req, res, next) => {
   }
 };
 
-export const getUserImages = async (req, res, next) => {
+export const getUserImages = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const images = await Image.find({ userId: req.user._id })
       .sort({ order: 1 })
       .select("-__v");
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Images retrieved successfully",
       count: images.length,
       images,
@@ -108,7 +134,11 @@ export const getUserImages = async (req, res, next) => {
   }
 };
 
-export const updateImage = async (req, res, next) => {
+export const updateImage = async (
+  req: any & { file?: Express.Multer.File },
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
     const { title } = req.body;
@@ -127,10 +157,12 @@ export const updateImage = async (req, res, next) => {
     }
 
     if (req.file) {
-      const publicId = image.imageUrl.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(
-        `stock-images/${req.user._id}/${publicId}`
-      );
+      const publicId = image.imageUrl.split("/").pop()?.split(".")[0];
+      if (publicId) {
+        await cloudinary.uploader.destroy(
+          `stock-images/${req.user._id}/${publicId}`
+        );
+      }
 
       const result = await uploadToCloudinary(
         req.file.buffer,
@@ -142,7 +174,7 @@ export const updateImage = async (req, res, next) => {
 
     await image.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Image updated successfully",
       image,
     });
@@ -151,7 +183,11 @@ export const updateImage = async (req, res, next) => {
   }
 };
 
-export const deleteImage = async (req, res, next) => {
+export const deleteImage = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -164,10 +200,12 @@ export const deleteImage = async (req, res, next) => {
       return next(new AppError("Image not found or not authorized", 404));
     }
 
-    const publicId = image.imageUrl.split("/").pop().split(".")[0];
-    await cloudinary.uploader.destroy(
-      `stock-images/${req.user._id}/${publicId}`
-    );
+    const publicId = image.imageUrl.split("/").pop()?.split(".")[0];
+    if (publicId) {
+      await cloudinary.uploader.destroy(
+        `stock-images/${req.user._id}/${publicId}`
+      );
+    }
 
     await User.findByIdAndUpdate(req.user._id, {
       $pull: { images: image._id },
@@ -175,7 +213,7 @@ export const deleteImage = async (req, res, next) => {
 
     await Image.findByIdAndDelete(id);
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Image deleted successfully",
     });
   } catch (error) {
@@ -183,9 +221,18 @@ export const deleteImage = async (req, res, next) => {
   }
 };
 
-export const rearrangeImages = async (req, res, next) => {
+interface ImageOrderItem {
+  id: string;
+  order: number;
+}
+
+export const rearrangeImages = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { imageOrders } = req.body;
+    const { imageOrders } = req.body as { imageOrders: ImageOrderItem[] };
 
     if (!imageOrders || !Array.isArray(imageOrders)) {
       return next(new AppError("Please provide image order information", 400));
@@ -204,7 +251,7 @@ export const rearrangeImages = async (req, res, next) => {
       .sort({ order: 1 })
       .select("-__v");
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Images rearranged successfully",
       images: updatedImages,
     });

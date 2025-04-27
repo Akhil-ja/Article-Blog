@@ -1,10 +1,15 @@
+import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import User from "../models/userModel.js";
+import User, { IUser } from "../models/userModel.js";
 import { generateToken } from "../utils/jwtUtils.js";
 import { generateOTP, sendOTP } from "../utils/mailUtils.js";
 import AppError from "../utils/appError.js";
 
-export const registerUser = async (req, res, next) => {
+export const registerUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, phoneNumber, password, fullName } = req.body;
 
@@ -17,7 +22,11 @@ export const registerUser = async (req, res, next) => {
     });
 
     if (userExists) {
-      if (!userExists.isVerified && userExists.otpExpiry < new Date()) {
+      if (
+        !userExists.isVerified &&
+        userExists.otpExpiry &&
+        userExists.otpExpiry < new Date()
+      ) {
         userExists.name = fullName;
 
         const passwordMatch = await bcrypt.compare(
@@ -50,14 +59,15 @@ export const registerUser = async (req, res, next) => {
           sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         });
 
-        return res.status(200).json({
+        res.status(200).json({
           _id: userExists._id,
-          name: userExists.fullName,
+          name: userExists.name,
           email: userExists.email,
           phoneNumber: userExists.phoneNumber,
           message:
             "Account updated! Please verify your email with the new OTP sent.",
         });
+        return;
       } else if (!userExists.isVerified) {
         return next(
           new AppError(
@@ -68,7 +78,7 @@ export const registerUser = async (req, res, next) => {
       } else {
         return next(
           new AppError(
-            "User  already exists with this email or phone number",
+            "User already exists with this email or phone number",
             400
           )
         );
@@ -104,7 +114,7 @@ export const registerUser = async (req, res, next) => {
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       });
 
-      return res.status(201).json({
+      res.status(201).json({
         _id: user._id,
         name: user.name,
         email: user.email,
@@ -120,7 +130,11 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-export const verifyEmail = async (req, res, next) => {
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, otp } = req.body;
 
@@ -131,14 +145,14 @@ export const verifyEmail = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new AppError("User  not found", 404));
+      return next(new AppError("User not found", 404));
     }
 
     if (user.verificationOTP !== otp) {
       return next(new AppError("Invalid OTP", 400));
     }
 
-    if (new Date() > user.otpExpiry) {
+    if (!user.otpExpiry || new Date() > user.otpExpiry) {
       return next(
         new AppError("OTP has expired. Please request a new one", 400)
       );
@@ -149,7 +163,7 @@ export const verifyEmail = async (req, res, next) => {
     user.otpExpiry = undefined;
     await user.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -161,7 +175,11 @@ export const verifyEmail = async (req, res, next) => {
   }
 };
 
-export const loginUser = async (req, res, next) => {
+export const loginUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -172,7 +190,7 @@ export const loginUser = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new AppError("User  not registered. Please sign up.", 404));
+      return next(new AppError("User not registered. Please sign up.", 404));
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -189,7 +207,7 @@ export const loginUser = async (req, res, next) => {
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
-    return res.status(200).json({
+    res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -202,11 +220,24 @@ export const loginUser = async (req, res, next) => {
   }
 };
 
-export const logoutUser = async (req, res, next) => {
+export const logoutUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    res.clearCookie("userToken");
+    res.clearCookie("userToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
 
-    return res.status(200).json({
+    res.clearCookie("_cfruid", { path: "/" });
+    res.clearCookie("_cfuvid", { path: "/" });
+    res.clearCookie("intercom-device-id-avmr5b6h", { path: "/" });
+    res.clearCookie("intercom-id-avmr5b6h", { path: "/" });
+
+    res.status(200).json({
       message: "Logged out successfully",
     });
   } catch (error) {
@@ -214,7 +245,11 @@ export const logoutUser = async (req, res, next) => {
   }
 };
 
-export const forgotPassword = async (req, res, next) => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email } = req.body;
 
@@ -225,7 +260,7 @@ export const forgotPassword = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new AppError("User  not found with this email", 404));
+      return next(new AppError("User not found with this email", 404));
     }
 
     const otp = generateOTP();
@@ -240,7 +275,7 @@ export const forgotPassword = async (req, res, next) => {
 
     console.log("The OTP is: ", otp);
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Password reset OTP sent to your email",
     });
   } catch (error) {
@@ -248,7 +283,11 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
-export const resendVerificationOTP = async (req, res, next) => {
+export const resendVerificationOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email } = req.body;
 
@@ -259,11 +298,11 @@ export const resendVerificationOTP = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new AppError("User  not found", 404));
+      return next(new AppError("User not found", 404));
     }
 
     if (user.isVerified) {
-      return next(new AppError("User  is already verified login", 400));
+      return next(new AppError("User is already verified login", 400));
     }
 
     const otp = generateOTP();
@@ -278,7 +317,7 @@ export const resendVerificationOTP = async (req, res, next) => {
 
     console.log("otp:", otp);
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Verification OTP resent to your email",
     });
   } catch (error) {
@@ -286,7 +325,11 @@ export const resendVerificationOTP = async (req, res, next) => {
   }
 };
 
-export const resetPassword = async (req, res, next) => {
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, otp, password } = req.body;
 
@@ -297,14 +340,14 @@ export const resetPassword = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new AppError("User  not found", 404));
+      return next(new AppError("User not found", 404));
     }
 
     if (user.resetPasswordOTP !== otp) {
       return next(new AppError("Invalid OTP", 400));
     }
 
-    if (new Date() > user.resetOTPExpiry) {
+    if (!user.resetOTPExpiry || new Date() > user.resetOTPExpiry) {
       return next(
         new AppError("OTP has expired. Please request a new one", 400)
       );
@@ -318,7 +361,7 @@ export const resetPassword = async (req, res, next) => {
     user.resetOTPExpiry = undefined;
     await user.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Password reset successful",
     });
   } catch (error) {
@@ -326,14 +369,22 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-export const getUserProfile = async (req, res, next) => {
+export const getUserProfile = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
+    if (!req.user) {
+      return next(new AppError("Not authorized", 401));
+    }
+
     const user = await User.findById(req.user._id).select("-password");
 
     if (user) {
-      return res.status(200).json(user);
+      res.status(200).json(user);
     } else {
-      return next(new AppError("User  not found", 404));
+      return next(new AppError("User not found", 404));
     }
   } catch (error) {
     next(error);

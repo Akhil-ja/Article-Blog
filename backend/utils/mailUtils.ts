@@ -5,7 +5,7 @@ function generateOTP() {
   return otp;
 }
 
-const sendOTP = async (email, otp) => {
+const sendOTP = async (email: string, otp: string) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
