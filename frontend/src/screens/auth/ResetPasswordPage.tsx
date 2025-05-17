@@ -1,12 +1,12 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { resetPassword, clearAuthState } from "../slices/authSlice";
+import { resetPassword, clearAuthState } from "../../slices/authSlice";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { Label } from "../components/ui/label";
-import { Input } from "../components/ui/input";
-import { RootState } from "../store";
+import { Label } from "../../components/ui/label";
+import { Input } from "../../components/ui/input";
+import { RootState } from "../../store";
 
 type ResetFormData = {
   otp: string;
