@@ -90,24 +90,26 @@ const UserNavbar = () => {
       sx={{ backgroundColor: "white", borderRadius: "2px" }}
     >
       <Toolbar>
-        <Typography
-          variant="h6"
-          onClick={() => {
-            navigate("/user/home");
-          }}
-          style={{ cursor: "pointer" }}
-          component="div"
-          sx={{
-            flexGrow: 0,
-            display: "flex",
-            alignItems: "center",
-            color: "#1976d2",
-            mr: 4,
-            fontSize: "15px",
-          }}
-        >
-          Article Feeds
-        </Typography>
+        {authInfo && (
+          <Typography
+            variant="h6"
+            onClick={() => {
+              navigate("/user/home");
+            }}
+            style={{ cursor: "pointer" }}
+            component="div"
+            sx={{
+              flexGrow: 0,
+              display: "flex",
+              alignItems: "center",
+              color: "#1976d2",
+              mr: 4,
+              fontSize: "15px",
+            }}
+          >
+            Article Feeds
+          </Typography>
+        )}
 
         {authInfo && (
           <Tabs
