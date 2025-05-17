@@ -119,16 +119,18 @@ const UserProfilePage: React.FC = () => {
   }, [dispatch]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setPasswordForm({
       ...passwordForm,
-      [e.target.name]: e.target.value,
+      [name]: value.trim(),
     });
   };
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setProfileForm({
       ...profileForm,
-      [e.target.name]: e.target.value,
+      [name]: value.trim(),
     });
   };
 
@@ -145,20 +147,24 @@ const UserProfilePage: React.FC = () => {
   const handlePasswordSubmit = () => {
     setPasswordError("");
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    const trimmedCurrentPassword = passwordForm.currentPassword.trim();
+    const trimmedNewPassword = passwordForm.newPassword.trim();
+    const trimmedConfirmPassword = passwordForm.confirmPassword.trim();
+
+    if (trimmedNewPassword !== trimmedConfirmPassword) {
       setPasswordError("Passwords do not match");
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
+    if (trimmedNewPassword.length < 6) {
       setPasswordError("Password must be at least 6 characters");
       return;
     }
 
     dispatch(
       changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
+        currentPassword: trimmedCurrentPassword,
+        newPassword: trimmedNewPassword,
       })
     );
 
@@ -175,11 +181,20 @@ const UserProfilePage: React.FC = () => {
   const handleProfileSubmit = () => {
     setProfileError("");
 
+    const trimmedFirstName = profileForm.firstName.trim();
+    const trimmedLastName = profileForm.lastName.trim();
+    const trimmedPhoneNumber = profileForm.phoneNumber.trim();
+
+    if (!trimmedFirstName) {
+      setProfileError("First name is required");
+      return;
+    }
+
     dispatch(
       updateProfile({
-        firstName: profileForm.firstName,
-        lastName: profileForm.lastName,
-        phoneNumber: profileForm.phoneNumber,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        phoneNumber: trimmedPhoneNumber,
       })
     );
 
@@ -189,7 +204,10 @@ const UserProfilePage: React.FC = () => {
   };
 
   const handlePreferencesSubmit = () => {
-    dispatch(updatePreferences({ preferences: selectedPreferences }));
+    // Ensure all preference strings are trimmed
+    const trimmedPreferences = selectedPreferences.map((pref) => pref.trim());
+
+    dispatch(updatePreferences({ preferences: trimmedPreferences }));
 
     if (!error) {
       setIsPreferencesDialogOpen(false);
@@ -321,7 +339,6 @@ const UserProfilePage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Password Change Dialog */}
       <Dialog
         open={isPasswordDialogOpen}
         onClose={() => setIsPasswordDialogOpen(false)}
@@ -394,7 +411,6 @@ const UserProfilePage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Profile Edit Dialog */}
       <Dialog
         open={isProfileDialogOpen}
         onClose={() => setIsProfileDialogOpen(false)}
@@ -462,7 +478,6 @@ const UserProfilePage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Preferences Dialog */}
       <Dialog
         open={isPreferencesDialogOpen}
         onClose={() => setIsPreferencesDialogOpen(false)}
