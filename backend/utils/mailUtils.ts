@@ -14,8 +14,8 @@ const sendOTP = async (email: string, otp: string) => {
     },
   });
 
-  const subject = "Authentication OTP for Image Gallary";
-  const text = `Your OTP for authentication on Image Gallary is: ${otp}`;
+  const subject = "Authentication OTP for Article Feeds";
+  const text = `Your OTP for authentication on Article Feeds is: ${otp}`;
 
   const mailOptions = {
     from: process.env.MAIL,
