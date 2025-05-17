@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { forgotPassword, clearAuthState } from "../slices/authSlice";
+import { forgotPassword, clearAuthState } from "../../slices/authSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { Input } from "../components/ui/input";
-import { RootState } from "../store";
-import { ChangeEventHandler, SubmitEventHandler } from "../Types/eventTypes";
+import { Input } from "../../components/ui/input";
+import { RootState } from "../../store";
+import { ChangeEventHandler, SubmitEventHandler } from "../../Types/eventTypes";
 
 const ForgotPasswordPage = () => {
   const dispatch = useDispatch();
@@ -74,7 +74,7 @@ const ForgotPasswordPage = () => {
                 type="email"
                 placeholder="Enter Email"
                 value={email}
-                onChange={handleEmailChange} // Using typed event handler
+                onChange={handleEmailChange}
                 className={
                   emailError
                     ? "border-red-500 w-4/5 p-3 rounded-md"
