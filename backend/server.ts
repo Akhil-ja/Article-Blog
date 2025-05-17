@@ -13,13 +13,15 @@ dotenv.config();
 
 connectDB();
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT;
 
 const app = express();
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+console.log("Running backend — FRONTEND_URL:", process.env.FRONTEND_URL);
 
 app.use(
   cors({

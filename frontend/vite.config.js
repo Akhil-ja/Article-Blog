@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 8001,
-    proxy: { "/api": { target: "http://localhost:5000" } },
+    proxy: { "/api": { target: import.meta.env.VITE_PUBLIC_API_URL } },
     changeOrigin: true,
   },
   resolve: {
