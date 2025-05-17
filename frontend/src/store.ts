@@ -1,15 +1,17 @@
-// store.ts
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
-import imageReducer from "./slices/imageSlice";
+import articleReducer from "./slices/articleSlice";
+import userReducer from "./slices/userSlice";
 
 export const store = configureStore({
   reducer: {
-    image: imageReducer,
     auth: authReducer,
+    articles: articleReducer,
+    user: userReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
 export default store;
