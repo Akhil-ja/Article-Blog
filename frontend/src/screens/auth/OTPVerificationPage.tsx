@@ -4,14 +4,14 @@ import {
   verifyEmail,
   clearAuthState,
   resendVerificationOTP,
-} from "../slices/authSlice";
+} from "../../slices/authSlice";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2, Mail } from "lucide-react";
 import { Button } from "@mui/material";
-import { Input } from "../components/ui/input";
-import { RootState } from "../store";
-import { SubmitEventHandler } from "../Types/eventTypes";
+import { Input } from "../../components/ui/input";
+import { RootState } from "../../store";
+import { SubmitEventHandler } from "../../Types/eventTypes";
 
 export const OTPVerificationPage = () => {
   const [otp, setOtp] = useState("");
