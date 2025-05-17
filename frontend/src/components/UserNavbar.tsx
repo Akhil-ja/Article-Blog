@@ -25,10 +25,11 @@ import {
   Article,
   Assessment,
 } from "@mui/icons-material";
+import { AppDispatch } from "../store";
 
 const UserNavbar = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const authInfo = localStorage.getItem("authInfo");
 
   const user = authInfo ? JSON.parse(authInfo) : null;
@@ -71,7 +72,7 @@ const UserNavbar = () => {
     });
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (event, newValue: any) => {
     setActiveTab(newValue);
 
     if (newValue === 0) {
