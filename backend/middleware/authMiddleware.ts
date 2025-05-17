@@ -16,8 +16,6 @@ const protect = async (
   try {
     const userToken = req.cookies?.userToken;
 
-    console.log("User Token:", userToken);
-
     if (!userToken) {
       res.status(401).json({
         message: "Not authorized, please login",
@@ -39,8 +37,6 @@ const protect = async (
       ) as CustomJwtPayload;
 
       const user = await User.findById(decoded.data.id).select("-password");
-
-      console.log("User>>", user?.email);
 
       if (!user) {
         res.status(401).json({
