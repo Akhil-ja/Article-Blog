@@ -8,7 +8,7 @@ export const registerUser = createAsyncThunk<
   { rejectValue: any }
 >("auth/register", async (userData, { rejectWithValue }) => {
   try {
-    const response = await api.post("api/user/register", userData);
+    const response = await api.post("api/auth/register", userData);
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response.data);
@@ -19,8 +19,8 @@ export const loginUser = createAsyncThunk<any, UserData, { rejectValue: any }>(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post("api/user/login", credentials);
-      sessionStorage.setItem("authInfo", JSON.stringify(response.data));
+      const response = await api.post("api/auth/login", credentials);
+      localStorage.setItem("authInfo", JSON.stringify(response.data));
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response.data);
@@ -32,8 +32,8 @@ export const logoutUser = createAsyncThunk<null, void, { rejectValue: any }>(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      await api.post("api/user/logout");
-      sessionStorage.removeItem("authInfo");
+      await api.post("api/auth/logout");
+      localStorage.removeItem("authInfo");
       return null;
     } catch (error: any) {
       return rejectWithValue(error.response.data);
@@ -47,7 +47,7 @@ export const forgotPassword = createAsyncThunk<
   { rejectValue: any }
 >("auth/forgotPassword", async (email, { rejectWithValue }) => {
   try {
-    const response = await api.post("api/user/forgot-password", { email });
+    const response = await api.post("api/auth/forgot-password", { email });
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response.data);
@@ -58,7 +58,7 @@ export const resetPassword = createAsyncThunk<any, any, { rejectValue: any }>(
   "auth/resetPassword",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await api.post("api/user/reset-password", data);
+      const response = await api.post("api/auth/reset-password", data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response.data);
@@ -72,7 +72,7 @@ export const resendVerificationOTP = createAsyncThunk<
   { rejectValue: any }
 >("auth/resendOTP", async ({ email }, { rejectWithValue }) => {
   try {
-    const response = await api.post("api/user/resend-verification", { email });
+    const response = await api.post("api/auth/resend-verification", { email });
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response.data);
@@ -83,8 +83,8 @@ export const verifyEmail = createAsyncThunk<any, any, { rejectValue: any }>(
   "auth/verifyEmail",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await api.post("api/user/verify-email", data);
-      sessionStorage.setItem("authInfo", JSON.stringify(response.data));
+      const response = await api.post("api/auth/verify-email", data);
+      localStorage.setItem("authInfo", JSON.stringify(response.data));
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response.data);
