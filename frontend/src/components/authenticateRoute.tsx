@@ -2,14 +2,13 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export const AuthenticatedRoute = () => {
   const location = useLocation();
-  const authInfo = sessionStorage.getItem("authInfo");
+  const authInfo = localStorage.getItem("authInfo");
   const publicOnlyRoutes = [
     "/register",
     "/login",
     "/verify-otp",
     "/forgot-password",
     "/reset-password",
-    "/verify-otp",
   ];
 
   let isAuthenticated = false;
