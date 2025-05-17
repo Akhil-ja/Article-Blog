@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, clearAuthState } from "../slices/authSlice";
+import { loginUser, clearAuthState } from "../../slices/authSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { Button } from "@mui/material";
-import { Label } from "../components/ui/label";
-import { Input } from "../components/ui/input";
-import { RootState } from "../store";
-import { ChangeEventHandler, SubmitEventHandler } from "../Types/eventTypes";
+import { Label } from "../../components/ui/label";
+import { Input } from "../../components/ui/input";
+import { RootState } from "../../store";
+import { ChangeEventHandler, SubmitEventHandler } from "../../Types/eventTypes";
 
 interface LoginForm {
   email: string;
