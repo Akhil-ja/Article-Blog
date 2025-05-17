@@ -1,11 +1,11 @@
-import mongoose, { Document, Schema, Model, Types } from "mongoose";
+import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   phoneNumber: string;
-  images: Types.ObjectId[];
+  preferences: string[];
   isVerified: boolean;
   verificationOTP?: string;
   otpExpiry?: Date;
@@ -19,7 +19,7 @@ const userSchema: Schema<IUser> = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phoneNumber: { type: String, required: true, unique: true },
-  images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
+  preferences: { type: [String], default: [] },
   isVerified: { type: Boolean, default: false },
   verificationOTP: { type: String },
   otpExpiry: { type: Date },
