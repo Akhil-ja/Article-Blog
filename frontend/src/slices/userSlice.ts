@@ -4,6 +4,7 @@ import {
   UserProfile,
   UserPreferences,
   FeedbackType,
+  Activity,
 } from "../Types/userType";
 import api from "../api/apiConfig";
 

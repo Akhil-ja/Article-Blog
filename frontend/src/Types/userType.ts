@@ -46,8 +46,20 @@ export interface UserState {
   profile: null | User;
   preferences: string[];
   categories: string[];
-  activities: [];
+  activities: Activity[];
   loading: boolean;
   error: null | any;
   success: null | string;
+}
+
+export interface Activity {
+  _id: string;
+  userId: string;
+  articleId: {
+    _id: string;
+    title: string;
+    summary?: string;
+  };
+  type: "like" | "dislike";
+  createdAt: string;
 }
