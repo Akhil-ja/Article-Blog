@@ -7,15 +7,14 @@ const App = () => {
   return (
     <>
       <UserNavbar />
-
-      <div className="layout">
-        <div className="main-content">
+      <div className="flex min-h-screen">
+        <div className="flex-1 bg-gray-100 p-4">
           <Outlet />
         </div>
       </div>
-
       <ToastContainer position="top-right" autoClose={3000} />
     </>
   );
 };
+
 export default App;
