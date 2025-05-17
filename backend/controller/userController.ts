@@ -1,368 +1,194 @@
 import { Request, Response, NextFunction } from "express";
-import bcrypt from "bcryptjs";
-import User, { IUser } from "../models/userModel.js";
-import { generateToken } from "../utils/jwtUtils.js";
-import { generateOTP, sendOTP } from "../utils/mailUtils.js";
+import User from "../models/userModel.js";
 import AppError from "../utils/appError.js";
+import bcrypt from "bcryptjs";
+import { Readable } from "stream";
+import cloudinary from "../config/cloudinary.js";
+import { categories } from "../constants/category.constant.js";
+import Feedback from "../models/feedbackModel.js";
 
-export const registerUser = async (
-  req: Request,
+interface CloudinaryResult {
+  secure_url: string;
+  public_id: string;
+}
+
+const uploadToCloudinary = (
+  buffer: Buffer,
+  folder: string
+): Promise<CloudinaryResult> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) return reject(error);
+        if (!result)
+          return reject(new Error("Failed to get result from Cloudinary"));
+        resolve(result as CloudinaryResult);
+      }
+    );
+
+    const readableStream = new Readable({
+      read() {
+        this.push(buffer);
+        this.push(null);
+      },
+    });
+
+    readableStream.pipe(uploadStream);
+  });
+};
+
+export const updatePreferences = async (
+  req: any,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, phoneNumber, password, fullName } = req.body;
+    const { preferences } = req.body;
 
-    if (!email || !phoneNumber || !password || !fullName) {
-      return next(new AppError("Please provide all required fields", 400));
+    if (!preferences || !Array.isArray(preferences)) {
+      return next(new AppError("Invalid preferences data", 400));
     }
 
-    const userExists = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
-
-    if (userExists) {
-      if (
-        !userExists.isVerified &&
-        userExists.otpExpiry &&
-        userExists.otpExpiry < new Date()
-      ) {
-        userExists.name = fullName;
-
-        const passwordMatch = await bcrypt.compare(
-          password,
-          userExists.password
-        );
-        if (!passwordMatch) {
-          const salt = await bcrypt.genSalt(10);
-          userExists.password = await bcrypt.hash(password, salt);
-        }
-
-        const newOtp = generateOTP();
-        const newOtpExpiry = new Date();
-        newOtpExpiry.setMinutes(newOtpExpiry.getMinutes() + 10);
-
-        userExists.verificationOTP = newOtp;
-        userExists.otpExpiry = newOtpExpiry;
-
-        await userExists.save();
-        await sendOTP(email, newOtp);
-
-        console.log("The OTP is: ", newOtp);
-
-        const token = generateToken({ id: userExists._id });
-
-        res.cookie("userToken", token, {
-          httpOnly: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        });
-
-        res.status(200).json({
-          _id: userExists._id,
-          name: userExists.name,
-          email: userExists.email,
-          phoneNumber: userExists.phoneNumber,
-          message:
-            "Account updated! Please verify your email with the new OTP sent.",
-        });
-        return;
-      } else if (!userExists.isVerified) {
-        return next(
-          new AppError(
-            "Account already exists but not verified. Please check your email for OTP or wait for current OTP to expire.",
-            400
-          )
-        );
-      } else {
-        return next(
-          new AppError(
-            "User already exists with this email or phone number",
-            400
-          )
-        );
+    const validCategories = categories;
+    for (const pref of preferences) {
+      if (!validCategories.includes(pref)) {
+        return next(new AppError(`Invalid category: ${pref}`, 400));
       }
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const otp = generateOTP();
-    const otpExpiry = new Date();
-    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
-    console.log(`the OTP is ${otp}`);
-
-    const user = await User.create({
-      name: fullName,
-      email,
-      phoneNumber,
-      password: hashedPassword,
-      verificationOTP: otp,
-      otpExpiry,
-    });
-
-    if (user) {
-      await sendOTP(email, otp);
-
-      const token = generateToken({ id: user._id });
-
-      res.cookie("userToken", token, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      });
-
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        message:
-          "Registration successful! Please verify your email with the OTP sent.",
-      });
-    } else {
-      return next(new AppError("Invalid user data", 400));
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const verifyEmail = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      return next(new AppError("Please provide email and OTP", 400));
-    }
-
-    const user = await User.findOne({ email });
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { preferences },
+      { new: true, runValidators: true }
+    ).select("-password");
 
     if (!user) {
       return next(new AppError("User not found", 404));
     }
 
-    if (user.verificationOTP !== otp) {
-      return next(new AppError("Invalid OTP", 400));
+    res.status(200).json({
+      status: "success",
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfile = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { firstName, lastName, phoneNumber, dob } = req.body;
+
+    const updateData: any = {};
+    if (firstName && lastName) updateData.name = firstName + " " + lastName;
+    if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (dob) updateData.dob = new Date(dob);
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return next(new AppError("User not found", 404));
     }
 
-    if (!user.otpExpiry || new Date() > user.otpExpiry) {
+    res.status(200).json({
+      status: "success",
+      data: {
+        user: updatedUser,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
       return next(
-        new AppError("OTP has expired. Please request a new one", 400)
+        new AppError("Please provide current password and new password", 400)
       );
     }
 
-    user.isVerified = true;
-    user.verificationOTP = undefined;
-    user.otpExpiry = undefined;
-    await user.save();
-
-    res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      message: "Email verified successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const loginUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return next(new AppError("Please provide both email and password", 400));
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return next(new AppError("User not registered. Please sign up.", 404));
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return next(new AppError("Incorrect password.", 401));
-    }
-
-    const token = generateToken({ id: user._id });
-
-    res.cookie("userToken", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
-
-    res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      isVerified: user.isVerified,
-      message: "Login successful",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const logoutUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    res.clearCookie("userToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
-
-    res.clearCookie("_cfruid", { path: "/" });
-    res.clearCookie("_cfuvid", { path: "/" });
-    res.clearCookie("intercom-device-id-avmr5b6h", { path: "/" });
-    res.clearCookie("intercom-id-avmr5b6h", { path: "/" });
-
-    res.status(200).json({
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const forgotPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return next(new AppError("Please provide email", 400));
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return next(new AppError("User not found with this email", 404));
-    }
-
-    const otp = generateOTP();
-    const otpExpiry = new Date();
-    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
-
-    user.resetPasswordOTP = otp;
-    user.resetOTPExpiry = otpExpiry;
-    await user.save();
-
-    await sendOTP(email, otp);
-
-    console.log("The OTP is: ", otp);
-
-    res.status(200).json({
-      message: "Password reset OTP sent to your email",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const resendVerificationOTP = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return next(new AppError("Please provide email address", 400));
-    }
-
-    const user = await User.findOne({ email });
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return next(new AppError("User not found", 404));
     }
 
-    if (user.isVerified) {
-      return next(new AppError("User is already verified login", 400));
-    }
+    const isPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
 
-    const otp = generateOTP();
-    const otpExpiry = new Date();
-    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
-
-    user.verificationOTP = otp;
-    user.otpExpiry = otpExpiry;
-    await user.save();
-
-    await sendOTP(email, otp);
-
-    console.log("otp:", otp);
-
-    res.status(200).json({
-      message: "Verification OTP resent to your email",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const resetPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email, otp, password } = req.body;
-
-    if (!email || !otp || !password) {
-      return next(new AppError("Please provide all required fields", 400));
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return next(new AppError("User not found", 404));
-    }
-
-    if (user.resetPasswordOTP !== otp) {
-      return next(new AppError("Invalid OTP", 400));
-    }
-
-    if (!user.resetOTPExpiry || new Date() > user.resetOTPExpiry) {
-      return next(
-        new AppError("OTP has expired. Please request a new one", 400)
-      );
+    if (!isPasswordCorrect) {
+      return next(new AppError("Current password is incorrect", 401));
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     user.password = hashedPassword;
-    user.resetPasswordOTP = undefined;
-    user.resetOTPExpiry = undefined;
     await user.save();
 
     res.status(200).json({
-      message: "Password reset successful",
+      status: "success",
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserPreferences = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id).select("preferences");
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        preferences: user.preferences,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    res.status(200).json({
+      status: "success",
+      data: {
+        categories,
+      },
     });
   } catch (error) {
     next(error);
@@ -386,6 +212,41 @@ export const getUserProfile = async (
     } else {
       return next(new AppError("User not found", 404));
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserActivities = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user._id;
+
+    const activities = await Feedback.find({ userId: userId })
+      .populate({
+        path: "articleId",
+        select: "_id title summary createdAt",
+      })
+      .sort({ createdAt: -1 });
+
+    if (!activities || activities.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        data: {
+          activities: [],
+        },
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        activities,
+      },
+    });
   } catch (error) {
     next(error);
   }
